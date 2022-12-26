@@ -5,7 +5,7 @@ import './styles/main.scss'
 
 import { BsGrid1X2Fill, BsImageFill } from 'react-icons/bs'
 import { FaFileUpload, FaFolderPlus, FaThList } from 'react-icons/fa'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AiFillFolderAdd } from 'react-icons/ai'
 
 function App() {
@@ -14,7 +14,7 @@ function App() {
   const [createFolder, setCreateFolder] = useState(false)
   const [viewToggle, setViewToggle] = useState(true)
   const [folderName, setFolderName] = useState('assets')
-  const [folderHistory, setFolderHistory] = useState(['assets'])
+  const [folderHistory, setFolderHistory] = useState()
   const { data, isLoading, refetch } = useQuery({
     queryKey: ['data', folderName],
     queryFn: async () => {
@@ -22,8 +22,29 @@ function App() {
         path: folderHistory.join('/')
       })
       return res.data
-    }
+    },
+    enabled: !!folderHistory
   })
+  useEffect(() => {
+    const storedPath = JSON.parse(localStorage.getItem('path'))
+    console.log(storedPath)
+    if(storedPath){
+      setFolderHistory([...storedPath]) 
+    }else {
+      setFolderHistory(['assets']) 
+    }
+  }, [])
+  useEffect(() => {
+    let cancel = true
+    if (cancel) {
+      if(folderHistory )
+        localStorage.setItem('path', JSON.stringify(folderHistory))
+    }
+    return () => {
+      cancel = false
+    }
+  }, [folderHistory])
+
   const loadAgain = (name) => {
     setFolderHistory([...folderHistory, name])
     setFolderName(name)
@@ -32,8 +53,13 @@ function App() {
 
   const removeHistory = (name) => {
     setFolderName(name)
+    if(folderHistory.indexOf(name) == 0){
+      console.log(4416912)
+      setFolderHistory(['assets'])
+    }else{
+      setFolderHistory(folderHistory.slice(0, folderHistory.indexOf(name) + 1))
+    }
     refetch()
-    setFolderHistory(folderHistory.slice(0, folderHistory.indexOf(name) + 1))
   }
 
   const submitHandler = async (e) => {
@@ -97,7 +123,7 @@ function App() {
             <FaFileUpload className='icon' onClick={() => setUploadFile(!uploadFile)} />
             <div className={uploadFile ? 'create-folder-form' : 'hidden'}>
               <form onSubmit={submitUploadHandler} className='submit-form'>
-                <input type="file" name='file' onChange={fileChange}/>
+                <input type="file" name='file' onChange={fileChange} />
                 <button className='btn btn-submit'>Upload File</button>
               </form>
               <button onClick={() => setUploadFile(false)} className='btn btn-cancel'>Cancel</button>
